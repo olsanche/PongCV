@@ -31,6 +31,8 @@ class Vecteur():
         self.x/=norme
         self.y/=norme
 
+    def __str__(self):
+        return str(self.x)+","+str(self.y)
 class Point():
     def __init__(self,p):
         self.x=p[0]
@@ -57,22 +59,12 @@ def CalcCollision(a,b,c):
     pscal2=-AB.x*BC.x-AB.y*BC.y
 
     if(pscal1>=0 and pscal2>=0):
-        print "CalcCollision(a,b,c)=1"
-        print "a="+str(a)
-        print "b="+str(b)
-        print "c="+str(c.centre)
         return 1
 
     if(CollisionPointCercle(a,c)==1):
-        print "CollisionPointCercle(a,c)=1"
-        print "a="+str(a)
-        print "centre="+str(c.centre)
         return 1
 
     if(CollisionPointCercle(b,c)==1):
-        print "CollisionPointCercle(b,c)=1"
-        print "b="+str(b)
-        print "centre="+str(c.centre)
         return 1
 
 
@@ -84,8 +76,8 @@ def CalculRebond(v1, N):
     v.y=v1[1]
     pscal=v.x*N.x+v.y*N.y
     v2=Vecteur()
-    v2.x=v.x-2*pscal*N.x
-    v2.y=v.y-2*pscal*N.y
+    v2.x=float(v.x-2*pscal*N.x)
+    v2.y=float(v.y-2*pscal*N.y)
     return [v2.x,v2.y]
 
 def GetNormal(a,b,c):
@@ -141,28 +133,35 @@ class Ball:
     def __init__(self):
         self.ball=pygame.image.load('Ball.png').convert()
         self.pos=[10,10]
-        self.centre=[self.pos[0]+self.ball.get_width()/2,
-        self.pos[1]+self.ball.get_height()/2]
-        self.r=self.ball.get_width()/2
-        print "R="+str(self.r)
+        self.width=self.ball.get_width()
+        self.height=self.ball.get_height()
+        self.r=self.width/2
+        self.centre=[(self.pos[0]+self.width/2),(self.pos[1]+self.height/2)]
         self.v=[5,5]
 
     def move(self):
-        if (self.centre[0]<=0) or (self.centre[0]>=640):
+        if (self.pos[0]<=0) or ((self.pos[0]+self.width)>=640):
             self.v[0]=-self.v[0]
-        if (self.centre[1]<=0) or (self.centre[1]>=480):
+        if (self.pos[1]<=0) or (self.pos[1]+self.height>=480):
             self.v[1]=-self.v[1]
 
-        self.centre[0]+=self.v[0]
-        self.centre[1]+=self.v[1]
         self.pos[0]+=self.v[0]
         self.pos[1]+=self.v[1]
-
+        self.centre=[(self.pos[0]+self.width/2),(self.pos[1]+self.height/2)]
         return self.ball.get_rect().move(self.pos[0],self.pos[1])
 
     def getImage(self):
         return self.ball
 
+
+def Collision(box1,box2):
+    if((box2.x>=box1.x+box1.width)or
+    (box2.x+box2.width<box1.x)or
+    (box2.y>=box1.y+box1.height)or
+    (box2.y+box2.height<=box1.y)):
+        return False
+    else:
+        return True
 
 def main():
     pygame.init()
@@ -171,57 +170,50 @@ def main():
     cam = cv2.VideoCapture(0)
 
     while 1:
-
-        #result, img = cam.read()
-        img=cv2.imread("IMG_1931.JPG")
+        result, img = cam.read()
+        #img=cv2.imread("IMG_1931.JPG")
 
         greyimg=cv2.cvtColor(img,cv2.COLOR_BGR2GRAY)
-        #normImage=cv2.equalizeHist(greyimg)
+
         gray = cv2.GaussianBlur(greyimg,(5,5),0)
         normImage = cv2.adaptiveThreshold(gray,255,1,1,11,2)
         # Operation de Morphologie pour limiter le bruit de la Webcam
         kernel = cv2.getStructuringElement(cv2.MORPH_ELLIPSE,(10,10))
-        #imgMorph=cv2.morphologyEx(normImage,cv2.MORPH_CLOSE,kernel)
         imgMorph=cv2.dilate(normImage,kernel)
         #cv2.imshow("Bin",normImage)
-
-
-        #ret,imgt = cv2.threshold(greyimg,lowThresh,255,1)
-        #cv2.imshow("Bin",imgt)
-        #ret, imgres=cv2.threshold(normImage,lowThresh,maxThresh,1)
 
         contours, hierarchy = cv2.findContours(imgMorph,cv2.RETR_EXTERNAL,cv2.CHAIN_APPROX_SIMPLE)
         #cv2.drawContours(img,contours,-1,(0,255,0),2)
 
         for cnt in contours:
-            # On ne selectionne que les contours dont la surface est > ? 1000 pixel pour
+            # On ne selectionne que les contours dont la surface est > ? 500 pixel pour
             # ne garder que l'objet principal
             if cv2.contourArea(cnt)>500:
+                #On d?termine les 4 coins entourant la ligne
                 approx = cv2.approxPolyDP(cnt,10,True)
                 rect=cv2.minAreaRect(cnt)
                 box = cv2.cv.BoxPoints(rect)
                 box = np.int0(box)
-                for i in range(0,4):
-                    if(i==3):
-                        line=[[box[i][0],box[i][1]],[box[0][0],box[0][1]]]
-                    else:
-                        line=[[box[i][0],box[i][1]],[box[i+1][0],box[i+1][1]]]
 
-                    l0=(line[0][0],line[0][1])
-                    l1=(line[1][0],line[1][1])
-                    cv2.line(img,l0,l1,(0,255,0),2)
+                #Pour chaque contour, on detecte le segment le plus long.
+                #Ensuite, on determine le segment median qui va servir pour la collision.
+                l1=math.sqrt((box[1][0]-box[0][0])**2+(box[1][1]-box[0][1])**2)
+                l2=math.sqrt((box[2][0]-box[1][0])**2+(box[2][1]-box[1][1])**2)
 
-                    if(CalcCollision(Point(l0),Point(l1),ball)):
-                        cv2.line(img,l0,l1,(255,0,0),2)
-                        Vn=GetNormal(Point(l0),Point(l1),ball)
-                        ball.v=CalculRebond(ball.v,Vn)
-                        print "v="+str(ball.v)
-                        break
+                if(l1<l2):
+                    pt1=Point([(box[1][0]+box[0][0])/2,(box[1][1]+box[0][1])/2])
+                    pt2=Point([(box[2][0]+box[3][0])/2,(box[2][1]+box[3][1])/2])
+                else:
+                    pt1=Point([(box[0][0]+box[3][0])/2,(box[0][1]+box[3][1])/2])
+                    pt2=Point([(box[2][0]+box[1][0])/2,(box[2][1]+box[1][1])/2])
 
-                #cv2.drawContours(img,[box],0,(0,0,255),2)
-                #print cv2.pointPolygonTest(cnt,(ball.X,ball.Y),False)
-                #if cv2.pointPolygonTest(line,(ball.X,ball.Y),False)>=0:
-                    #print "Angle: "+str(angle)+"; Ball.angle="+str(ball.angle)+"; Reflection="+str(2*(angle+90)-ball.angle)
+
+                #Test de la collision et determination du nouveau vecteur vitesse
+                if CalcCollision(pt1,pt2,ball):
+                    n=GetNormal(pt1,pt2,ball)
+                    ball.v=CalculRebond(ball.v,n)
+
+
         img = cv2.cvtColor(img,cv2.COLOR_BGR2RGB)
         img = np.array(img)
         img = Image.fromarray(img)
