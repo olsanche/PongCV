@@ -168,7 +168,7 @@ def main():
     screen = pygame.display.set_mode((640, 480))
     ball = Ball()
     cam = cv2.VideoCapture(0)
-
+    cv2.namedWindow("Bin")
     while 1:
         result, img = cam.read()
         #img=cv2.imread("IMG_1931.JPG")
@@ -180,7 +180,7 @@ def main():
         # Operation de Morphologie pour limiter le bruit de la Webcam
         kernel = cv2.getStructuringElement(cv2.MORPH_ELLIPSE,(10,10))
         imgMorph=cv2.dilate(normImage,kernel)
-        #cv2.imshow("Bin",normImage)
+        cv2.imshow("Bin",gray)
 
         contours, hierarchy = cv2.findContours(imgMorph,cv2.RETR_EXTERNAL,cv2.CHAIN_APPROX_SIMPLE)
         #cv2.drawContours(img,contours,-1,(0,255,0),2)
