@@ -40,7 +40,10 @@ class Point():
 
     def __str__(self):
         return str(self.x)+","+str(self.y)
-
+"""
+Le fonctions CalcCollision, GetNormal, CollisionPointCercle et CollisionDroite
+sont tir?es du tutoriel du site du zero: http://fr.openclassrooms.com/informatique/cours/theorie-des-collisions
+"""
 def CalcCollision(a,b,c):
     if(CollisionDroite(a,b,c)==0):
         return 0
@@ -70,6 +73,11 @@ def CalcCollision(a,b,c):
 
     return 0
 
+"""
+Calcul du rebond en fonction du vecteur vitesse et de la normal au point de collision.
+v1: Vecteur vitesse
+N: Normale
+"""
 def CalculRebond(v1, N):
     v=Vecteur()
     v.x=v1[0]
@@ -80,6 +88,9 @@ def CalculRebond(v1, N):
     v2.y=float(v.y-2*pscal*N.y)
     return [v2.x,v2.y]
 
+"""
+Caul de la normal
+"""
 def GetNormal(a,b,c):
     AC=Vecteur()
     u=Vecteur()
@@ -132,13 +143,15 @@ def CollisionDroite(a,b,c):
 class Ball:
     def __init__(self):
         self.ball=pygame.image.load('Ball.png').convert()
-        self.pos=[10,10]
-        self.width=self.ball.get_width()
-        self.height=self.ball.get_height()
-        self.r=self.width/2
-        self.centre=[(self.pos[0]+self.width/2),(self.pos[1]+self.height/2)]
-        self.v=[5,5]
+        self.ball.set_colorkey((0,255,0)) #Couleur transparente
+        self.pos=[10,10]                    # Position initiale
+        self.width=self.ball.get_width()    # Largeur du sprite
+        self.height=self.ball.get_height()  # Hauteur du sprite
+        self.r=self.width/2                 # Rayon de la balle
+        self.centre=[(self.pos[0]+self.width/2),(self.pos[1]+self.height/2)] # Centre
+        self.v=[5,5]    # Vecteur vitesse initial
 
+    """Deplace la balle en fonction de son vecteur vitesse"""
     def move(self):
         if (self.pos[0]<=0) or ((self.pos[0]+self.width)>=640):
             self.v[0]=-self.v[0]
@@ -154,21 +167,14 @@ class Ball:
         return self.ball
 
 
-def Collision(box1,box2):
-    if((box2.x>=box1.x+box1.width)or
-    (box2.x+box2.width<box1.x)or
-    (box2.y>=box1.y+box1.height)or
-    (box2.y+box2.height<=box1.y)):
-        return False
-    else:
-        return True
-
 def main():
+    # Initialisation
     pygame.init()
     screen = pygame.display.set_mode((640, 480))
     ball = Ball()
     cam = cv2.VideoCapture(0)
-    cv2.namedWindow("Bin")
+
+    # Boucle principale
     while 1:
         result, img = cam.read()
         #img=cv2.imread("IMG_1931.JPG")
@@ -180,10 +186,9 @@ def main():
         # Operation de Morphologie pour limiter le bruit de la Webcam
         kernel = cv2.getStructuringElement(cv2.MORPH_ELLIPSE,(10,10))
         imgMorph=cv2.dilate(normImage,kernel)
-        cv2.imshow("Bin",gray)
 
         contours, hierarchy = cv2.findContours(imgMorph,cv2.RETR_EXTERNAL,cv2.CHAIN_APPROX_SIMPLE)
-        #cv2.drawContours(img,contours,-1,(0,255,0),2)
+        cv2.drawContours(img,contours,-1,(0,255,0),2)
 
         for cnt in contours:
             # On ne selectionne que les contours dont la surface est > ? 500 pixel pour
