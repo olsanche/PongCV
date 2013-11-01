@@ -12,6 +12,7 @@
 import os, sys
 import cv2
 import pygame
+from pygame.locals import *
 from PIL import Image
 import numpy as np
 import math
@@ -186,6 +187,16 @@ def main():
 
     # Boucle principale
     while 1:
+        # Gestion des evenements
+        for event in pygame.event.get():
+            if event.type == QUIT:
+                pygame.quit()
+                sys.exit()
+            if event.type == KEYDOWN:
+                if event.key == K_ESCAPE:
+                    pygame.quit()
+                    sys.exit()
+
         result, img = cam.read()
         #img=cv2.imread("IMG_1931.JPG")
 
