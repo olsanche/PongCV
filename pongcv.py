@@ -209,18 +209,18 @@ def main():
         imgMorph = cv2.dilate(normImage, kernel)
 
         contours, hierarchy = cv2.findContours(imgMorph, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
-        cv2.drawContours(img, contours, -1, (0,255,0), 2)
+
 
         for cnt in contours:
             # On ne selectionne que les contours dont la surface est > ? 500 pixel pour
             # ne garder que l'objet principal
-            if cv2.contourArea(cnt) > 500:
+            if cv2.contourArea(cnt) > 1000:
                 #On d?termine les 4 coins entourant la ligne
                 approx = cv2.approxPolyDP(cnt, 10, True)
                 rect = cv2.minAreaRect(cnt)
                 box = cv2.cv.BoxPoints(rect)
                 box = np.int0(box)
-
+                cv2.drawContours(img, cnt, -1, (0,255,0), 2)
                 #Pour chaque contour, on detecte le segment le plus long.
                 #Ensuite, on determine le segment median qui va servir pour la collision.
                 l1 = math.sqrt((box[1][0]-box[0][0])**2 + (box[1][1]-box[0][1])**2)
